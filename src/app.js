@@ -14,7 +14,7 @@ const portApp = 8085
 //CONFIGURAÇÕES
 // cors
 const corsOptions ={
-    origin:['http://localhost:3000', 'http://56.125.31.77:3000'], 
+    origin:['http://localhost:3000', 'https://www.raiox3p.com'], 
     credentials:true,            //access-control-allow-credentials:true
     optionSuccessStatus:200
 }
