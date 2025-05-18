@@ -45,6 +45,19 @@ module.exports = {
                 return res.status(400).json({ error: 'especifique o email do usuario' });
             }
 
+
+            // validar e-mail
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ error: 'Formato de e-mail inválido.' });
+            }
+
+            // validar contato
+            const telefoneRegex = /^\d{10,11}$/;
+            if (!telefoneRegex.test(contato)) {
+                return res.status(400).json({ error: 'Formato de telefone inválido. Use apenas números com DDD, ex: 41999998888.' });
+            }
+
             // Verificar se já existe um lead para o email 
             let leadExistente = await Lead.findOne({ email: email });
             if (leadExistente) {
@@ -186,7 +199,7 @@ module.exports = {
             respondido = true
         }
 
-        return res.status(200).json({ message: 'Usuario autenticado!',respondido });
+        return res.status(200).json({ message: 'Usuario autenticado!', respondido });
     }
 
 }
