@@ -1,7 +1,9 @@
+const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 const Lead = require('../models/Lead')
 const Diagnostico = require('../models/Diagnostico')
+const Usuario = require('../models/Usuario')
 
 
 module.exports = {
@@ -200,6 +202,111 @@ module.exports = {
         }
 
         return res.status(200).json({ message: 'Usuario autenticado!', respondido });
+    },
+    async gerarToken(req, res) {
+
+        let SendUser = req.body.email
+        let SendKey = req.body.password
+        let user = await Usuario.findOne({ email: SendUser })
+
+        if (!user) return res.status(400).json({ error: "Senha ou Usario Incorreto" })
+
+        const senhaCorreta = await bcrypt.compare(SendKey, user.senha);
+        if (senhaCorreta) {
+
+            const secretKey = 'chave_teste'
+            // Gerar token JWT após a autenticação do usuário
+            const token = jwt.sign({ userId: user.id }, secretKey);
+
+            res.status(200).json(token);
+
+        } else {
+
+            return res.status(400).json({ error: "Senha ou Usario Incorreto" })
+
+        }
+    },
+    async recuperarDados(req, res) {
+        const { dataInicial, dataFinal } = req.body;
+
+        // Função para validar o formato da data
+        const validarData = (data) => {
+            const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            return regex.test(data);
+        };
+
+        // Função para converter a data no formato desejado
+        const formatarData = (data) => {
+            const options = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            return new Date(data).toLocaleString('pt-BR', options);
+        };
+
+        // Validar as datas
+        if (!validarData(dataInicial) || !validarData(dataFinal)) {
+            return res.status(400).json({ error: 'Formato de data inválido. Use dd/mm/aaaa.' });
+        }
+
+        // Converter as datas para o formato ISO
+        const [diaInicial, mesInicial, anoInicial] = dataInicial.split('/');
+        const [diaFinal, mesFinal, anoFinal] = dataFinal.split('/');
+
+        const inicio = new Date(`${anoInicial}-${mesInicial}-${diaInicial}T00:00:00Z`);
+        const fim = new Date(`${anoFinal}-${mesFinal}-${diaFinal}T23:59:59Z`);
+
+        // Verificar se a data final não é mais antiga que a inicial
+        if (fim < inicio) {
+            return res.status(400).json({ error: 'A data final não pode ser anterior à data inicial.' });
+        }
+
+        try {
+            // Buscar registros de "Lead" e "Diagnostico"
+            const leads = await Lead.find({ createdAt: { $gte: inicio, $lte: fim } });
+            const diagnosticos = await Diagnostico.find({ createdAt: { $gte: inicio, $lte: fim } });
+
+            // Formatar as datas antes de retornar
+            const formatarRegistros = (registros) => {
+                return registros.map(registro => ({
+                    ...registro.toObject(),
+                    createdAt: formatarData(registro.createdAt),
+                    updatedAt: formatarData(registro.updatedAt),
+                }));
+            };
+
+            const registrosFormatados = {
+                leads: formatarRegistros(leads),
+                diagnosticos: formatarRegistros(diagnosticos),
+            };
+
+            return res.json(registrosFormatados);
+        } catch (error) {
+            return res.status(500).json({ error: 'Erro ao recuperar os dados.' });
+        }
+    },
+    async criaLoginTemp(req, res) {
+
+        const novoUsuario = new Usuario({
+            email: '3pservicepartner2@gmail.com',
+            senha: '3pSenhaExcel'
+        })
+
+        bcrypt.genSalt(10, (erro, salt) => {
+            bcrypt.hash(novoUsuario.senha, salt, (erro, hash) => {
+                if (erro) {
+                    res.send("Houve um erro durante o salvamento do usuario")
+                }
+
+                novoUsuario.senha = hash
+                novoUsuario.save().then(() => {
+                    res.send("Usuario criado com sucessso!")
+                }).catch((err) => {
+                    res.send("Houve um erro ao criar o usuario, tente novamente!")
+                })
+
+
+            })
+        })
+
+
     }
 
 }

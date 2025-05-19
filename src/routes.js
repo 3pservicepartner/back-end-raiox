@@ -10,6 +10,9 @@ const main = require('./controllers/main')
 routes.post('/cadastrarLead', main.cadastrarLead)
 routes.post('/registrarDiagnostico', verifyToken, main.registrarDiagnostico)
 routes.get('/respostaDiagnostico', verifyToken, main.respostaDiagnostico)
-routes.get('/verificarTokken',verifyToken,main.verificarTokken)
+routes.get('/verificarTokken', verifyToken, main.verificarTokken)
+routes.post('/gerarToken', main.gerarToken)
+routes.post('/recuperarDados', verifyToken, main.recuperarDados)
+
 
 module.exports = routes
