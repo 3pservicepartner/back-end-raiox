@@ -20,6 +20,8 @@ module.exports = {
             termosAceito
         } = req.body;
 
+        let casdastroTeste = false
+
         try {
 
             //verificando se os termos foram aceitos
@@ -63,12 +65,19 @@ module.exports = {
             // Verificar se já existe um lead para o email 
             let leadExistente = await Lead.findOne({ email: email });
             if (leadExistente) {
-                return res.status(400).json({ error: 'Já existe um usuário cadastrado com esse email.' });
+
+                if (email === "silviorea@3pservicepartner.com.br" || email === "jamal@3pservicepartner.com.br") {
+                    casdastroTeste = true
+                } else {
+                    return res.status(400).json({ error: 'Já existe um usuário cadastrado com esse email.' });
+                }
+
+
             }
 
             // Verificar se já existe um lead para o contato 
             leadExistente = await Lead.findOne({ contato: contato });
-            if (leadExistente) {
+            if (leadExistente && !casdastroTeste) {
                 return res.status(400).json({ error: 'Já existe um usuário cadastrado com esse contato.' });
             }
 
@@ -89,19 +98,31 @@ module.exports = {
 
             //ainda necessario criar a verificação de um email valido 
             //ainda criar verificação se contato valido 
+            if (!casdastroTeste) {
+                // Cadastrar um novo lead
+                const novoLead = new Lead({
+                    nome: nome,
+                    nomeEmpresa: nomeEmpresa,
+                    contato: contato,
+                    email: email,
+                    segmento: segmento,
+                    faturamento: faturamento,
+                    qtdFuncionario: qtdFuncionario
+                });
 
-            // Cadastrar um novo lead
-            const novoLead = new Lead({
-                nome: nome,
-                nomeEmpresa: nomeEmpresa,
-                contato: contato,
-                email: email,
-                segmento: segmento,
-                faturamento: faturamento,
-                qtdFuncionario: qtdFuncionario
-            });
+                await novoLead.save()
 
-            await novoLead.save()
+            } else {
+
+                leadExistente.nome = nome
+                leadExistente.nomeEmpresa = nomeEmpresa
+                leadExistente.contato = contato
+                leadExistente.email = email
+                leadExistente.segmento = segmento
+                leadExistente.faturamento = faturamento
+                leadExistente.qtdFuncionario = qtdFuncionario
+
+            }
 
             const secretKey = 'chave_teste' //process.env.SECRET_KEY;
             // Gerar token JWT após a autenticação do usuário
