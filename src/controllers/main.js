@@ -63,11 +63,12 @@ module.exports = {
             }
 
             // Verificar se já existe um lead para o email 
-            let leadExistente = await Lead.findOne({ email: email });
+            const leadExistente = await Lead.findOne({ email: email });
             if (leadExistente) {
 
                 if (email === "silviorea@3pservicepartner.com.br" || email === "jamal@3pservicepartner.com.br") {
                     casdastroTeste = true
+                    await Diagnostico.deleteMany({ email: email });
                 } else {
                     return res.status(400).json({ error: 'Já existe um usuário cadastrado com esse email.' });
                 }
@@ -76,8 +77,8 @@ module.exports = {
             }
 
             // Verificar se já existe um lead para o contato 
-            leadExistente = await Lead.findOne({ contato: contato });
-            if (leadExistente && !casdastroTeste) {
+            const contatoExistente = await Lead.findOne({ contato: contato });
+            if (contatoExistente && !casdastroTeste) {
                 return res.status(400).json({ error: 'Já existe um usuário cadastrado com esse contato.' });
             }
 
@@ -98,6 +99,7 @@ module.exports = {
 
             //ainda necessario criar a verificação de um email valido 
             //ainda criar verificação se contato valido 
+            let userEmail
             if (!casdastroTeste) {
                 // Cadastrar um novo lead
                 const novoLead = new Lead({
@@ -111,7 +113,7 @@ module.exports = {
                 });
 
                 await novoLead.save()
-
+                userEmail = novoLead.email
             } else {
 
                 leadExistente.nome = nome
@@ -122,11 +124,13 @@ module.exports = {
                 leadExistente.faturamento = faturamento
                 leadExistente.qtdFuncionario = qtdFuncionario
 
+                userEmail = leadExistente.email
+
             }
 
             const secretKey = 'chave_teste' //process.env.SECRET_KEY;
             // Gerar token JWT após a autenticação do usuário
-            const token = jwt.sign({ userEmail: novoLead.email }, secretKey, { expiresIn: '1h' });
+            const token = jwt.sign({ userEmail: userEmail }, secretKey, { expiresIn: '1h' });
 
             return res.status(201).json({ message: 'Lead cadastrado com sucesso!', token });
 
